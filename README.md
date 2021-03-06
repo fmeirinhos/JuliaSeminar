@@ -18,21 +18,24 @@ The goal of this seminar is to give a complete overview to specifics of the Juli
   - Scoping and Mutation
   
 #### Intermediate
-  - LinearAlgebra
+  - Linear Algebra (Standard Library)
+  - Higher-order functions
   - Threading
   - Profiling
-  - Performance
+  - Performance tips
   - Git tips (version control)
   
 #### Advanced
-  - Metaprogramming & code representations
-  - Automatic diff
+  - Metaprogramming
+  - Code representations
+  - Automatic differentiation
   - Basic ML
 
 ### How to prepare:
 * Install the latest, stable, [Julia release](https://julialang.org/downloads/)
 
-The contents of this seminar were greatly inspired by the incredible workshops by
+The contents of this seminar were greatly inspired by other incredible workshops by
   - [Carsten Bauer](https://github.com/crstnbr)
   - [George Datseris](https://github.com/Datseris)
-and also by the offical Julia documention and various Discourse, Reddit and stackoverflow discussions.
+
+as well as the offical Julia documention and various Discourse, Reddit and StackOverflow discussions.
