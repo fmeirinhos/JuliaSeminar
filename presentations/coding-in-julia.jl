@@ -56,7 +56,7 @@ The norm is that something in pure Julia will run a lot faster than in most dyna
 
 **Native Julia can beat highly optimised libraries** (some of the fastest BLAS-like operations are in `LoopVectorization.jl`). No magic: Julia shares the same LLVM backend with e.g. C++ so the compiled performances can be very similar.
 
-Don't focus on the fact that Julia is faster or not but **that it's simply much easier to write high-performance and clear code in Julia than in other languages**.
+Don't focus on the fact that Julia is faster or not but **that it's simply much simpler to write high-performant and clear code in Julia than in other languages**.
 """
 
 # ╔═╡ 528ae93c-7b49-11eb-12f2-63a759823973
@@ -235,7 +235,7 @@ car = Car("yellow", "mercedes")
 car.information() # prints "I'm a yellow mercedes"
 ```
 
-Phylosophy: Methods shouldn’t belong to a specific data type:
+Philosophy: Methods shouldn’t belong to a specific data type:
 > It makes little sense to artificially deem the operations to "belong" to one argument (on the left of the `.`) more than any of the others.
 
 Since there are no classes in Julia, the structures only contain data but no methods

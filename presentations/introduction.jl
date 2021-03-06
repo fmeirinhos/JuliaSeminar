@@ -91,7 +91,7 @@ Indexing a collection like an array is done with brackets: `collection[index]`. 
 **Julia indexing starts from 1**
 
 ### Tuples
-Tuples are ordered immutable collections of elements. They are mostly used when the elements are not of the same type with each other and are intended for small collections.
+Tuples are ordered immutable collections of elements. Use them to group together related data not necessarily of of the same type.
 
 Syntax: `(item1, item2, ...)`
 
@@ -128,57 +128,62 @@ nt[:x] # will return 5
 md"""
 ### Arrays
 
-[Read more](https://docs.julialang.org/en/v1/manual/arrays/) on Multi-dimensional arrays
+A Julia `Array` is a mutable and ordered collection of items of the same type.
 
-The standard Julia `Array` is a mutable and ordered collection of items of the same type.
-
-The dimensionality of the Julia array is important. A `Matrix` is an array of dimension 2. A `Vector` is an array of dimension 1. The *element type* of what an array contains is irrelevant to its dimension!
-
-**Vector of Vectors of Numbers and a Matrix of Numbers are two totally different things!**
+The dimensionality of the Julia array is important. 
+- A `Vector` is an array of dimension 1
+- A `Matrix` is an array of dimension 2. 
+The *element type* or *length* of an array contains is independent of its dimension.
 
 Syntax: `[item1, item2, ...]`
 
 ```julia
-myfriends = ["Karl", "Friedrich", "Vladimir", "Slavoj"]
-fibonacci = [1, 1, 2, 3, 5, 8, 13]
-mixture = [1, 1, 2, 3, "Ted", "Robyn"]
+myfriends = ["Karl", "Friedrich", "Vladimir", "Theodor", "Slavoj"]
+fibonacci = [1818, 1820, 1870, 1903, 1949]
+mixture = [1818, 1820, 1870, "Theodor", "Slavoj"]
 ```
 
-As mentioned, the type of the elements of an array must be the same. Yet above we mix numbers with strings! I wasn't lying though; the above array is an **unoptimized** version that can hold **any** thing. You can see this in the "type" of the array, whicn is to the left of its dimenmsionality: `Array{TypeOfTheThings, Dimensionality}`. For `mixture` it is `Any`.
+The `mixture` array indeed has elements of the same type: the type `Any`: _the union of all types_. This is akin to a Python list and can't be optimised since the array can hold elements of _any_ type (hence it's internally an array of pointers).
 
-Arrays of other data structures, e.g. vectors or dictionaries, or anything, as well as multi-dimensional arrays are possible:
+**Vector of Vectors of Numbers and a Matrix of Numbers are two totally different things!**
 
 ```julia
 vec_vec_num = [[1, 2, 3], [4, 5], [6, 7, 8, 9]]
 
-# If you want to make a matrix, two ways are the most common: (1) specify each entry one by one
+# To create a matrix
+
+# (1) specify each entry one by one
 matrix = [1 2 3; # elements in same row separated by space
           4 5 6; # semicolon means "go to next row"
           7 8 9]
 
-R[1,2] # two dimensional indexing
+# (2) create a 1D array and reshape it: Julia arrays are column major!
+v = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+matrix = reshape(v, 3, 3)
 ```
 
-Since arrays are mutable we can change their entries, or even add new ones
+The `:` symbol can be used to select all elements in some dimension.
 ```julia
-fibonacci_new = [1, 1, 2, 3, 5, 8, 13]
-fibonacci_new[1] = 15
-
-push!(fibonacci_new, 16)
-fibonacci_new
+matrix[:,1]
 ```
 
-Lastly, for multidimension arrays, the `:` symbol is useful, which means to "select all elements in this dimension".
+Since **arrays are mutable** we can change their entries or add new ones
 ```julia
-y = rand(3,3)
-y[:,1]
+fibonacci = [1, 1, 2, 3, 6]
+fibonacci[5] = 5
+
+push!(fibonacci, 8)
+fibonacci
 ```
+
+[Read more](https://docs.julialang.org/en/v1/manual/arrays/) on Multi-dimensional arrays
 """
 
 # ╔═╡ c01023c2-7b7f-11eb-2914-8d92e90752f3
 md"""
 ### Ranges
-Ranges are useful shorthand notations that define a "vector" (one dimensional array). This is done with the following syntax:
+A range is a sequence of of numbers, most commonly used for looping or creating equally spaced grids (the latter aka `linspace`). The syntax is
+
 ```
 start:step:end
 range(start, end; length = ...)
@@ -187,17 +192,23 @@ range(start, end; step = ...)
 
 ```julia
 r = 0:0.01:5
+```
 
-# Ranges are not unique to numeric data, and can be used with anything that extends their interface, e.g.
+A range is not unique to numeric data
+```julia
 rs = 'a':'z'
-
 collect(rs)
 ```
 
-It is important to understand that ranges **do not store all elements in memory** like `Vector`s. Instead they produce the elements on the fly when necessary, and therefore are in general preferred over `Vector`s if the data is equi-spaced. 
+Ranges **do not store all elements in memory** like `Array`s (unless `collect`ed). Their elements are generated on the fly.
 
-Lastly, ranges are typically used to index into arrays. One can type `A[1:3]` to get the first 3 elements of `A`, or `A[end-2:end]` to get the last three elements of `A`. If `A` is multidimensional, the same type of indexing can be done for any dimension:
+Ranges are also used to index into arrays:
+```julia
+A[1:3] # gets the first 3 elements of `A`
+A[end-2:end] # gets the last three elements of `A`
+```
 
+If `A` is multidimensional:
 ```julia
 A = rand(4, 4)
 A[1:3, 1]
@@ -264,7 +275,7 @@ Comprehensions provide a general and powerful way to construct arrays. Comprehen
 
 $A = [ F(x,y,...) \text{for}\, x=rx, y=ry, ... ]$
 
-The meaning of this form is that F(x,y,...) is evaluated with the variables x, y, etc. taking on each value in their given list of values. Values can be specified as any iterable object, but will commonly be ranges like 1:n or 2:(n-1), or explicit arrays of values like [1.2, 3.4, 5.7]. The result is an N-d dense array with dimensions that are the concatenation of the dimensions of the variable ranges rx, ry, etc. and each F(x,y,...) evaluation returns a scalar.
+F(x,y,...) is evaluated with the variables x, y, etc. taking on each value in their given list of values. The result is an `N`-d dense array with dimensions that are the concatenation of the dimensions of the variable ranges `rx`, `ry`, etc.
 
 ```julia
 a = [sin(x) for x in range(0.0, π, length=1000)]
@@ -273,7 +284,7 @@ a = [sin(x) for x in range(-π, +π, length=1000) if x > 0]
 
 ### Generator Expressions
 
-Comprehensions can also be written without the enclosing square brackets, producing an object known as a generator. This object can be iterated to produce values on demand, instead of allocating an array and storing them in advance
+Comprehensions can also be written without the enclosing square brackets, producing a generator. This object can be iterated to produce values on demand, instead of allocating an array and storing them in advance
 
 ```julia
 a = (evaluate_expensive_function(x) for x in range(-π, π, length=1000))
@@ -381,11 +392,15 @@ g(2, 4, 2) # keyword arguments can't be specified by position
 md"""
 #### Exercise: Collatz conjecture
 
-Given a positive integer, create a function that counts the steps it takes to reach `1` following the [Collatz conjecture algorithm](https://en.wikipedia.org/wiki/Collatz_conjecture) (if $n$ is odd do $n=3n+1$ otherwise do $n=n/2$). Test it with the number 100 to get 25.
+Given a positive integer, create a function `collatz` that counts the steps it takes to reach `1` following the [Collatz conjecture algorithm](https://en.wikipedia.org/wiki/Collatz_conjecture) (if $n$ is odd do $n=3n+1$ otherwise do $n=n/2$).
+
+```julia
+collatz(100) == 25
+```
 
 Challenge: can you do it without loops?
 
-**Protip**: make a type-stable function by using `÷`, (`\div<TAB>`): In Julia `/` is the floating point devision operator and thus `n/m` is always a float number even if `n, m` are integers.*
+**Protip**: make a type-stable function by using `÷`, (`\div<TAB>`): In Julia `/` is the floating point devision operator and thus `n/m` is always a float number even if `n, m` are integers.
 """
 
 # ╔═╡ 59881288-7b82-11eb-05cf-1fe54d94d2dd
