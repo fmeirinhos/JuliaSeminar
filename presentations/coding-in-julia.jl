@@ -9,7 +9,7 @@ html"<button onclick='present()'>present</button>"
 
 # ╔═╡ 1fc8fccc-7758-11eb-3d10-b1c72df65ebd
 md"""
-# Coding scientifically in Julia
+# Programming scientifically in Julia
 
 - Julia is easy to read and write (but so are Python or Matlab)
 - Julia is performant and scalable* (but so are C or Fortran)
@@ -220,7 +220,7 @@ md"""
 
 > People come to Julia for speed but stay for the multiple dispatch
 
-Difference from OOP (Python)
+Difference from OOP (single-dispatch)
 ```
 class Car 
     def __init__(self, color, brand):
@@ -232,14 +232,14 @@ class Car
 		return "I'm a {} {}".format(self.color, self.brand)
 
 car = Car("yellow", "mercedes")
-car.information() # prints "I'm a yellow mercedes"
+car.information()
 ```
 
 Philosophy: Methods shouldn’t belong to a specific data type:
-> It makes little sense to artificially deem the operations to "belong" to one argument (on the left of the `.`) more than any of the others.
+> It makes little sense to artificially deem the operations to "belong" to one argument more than any of the others.
 
 Since there are no classes in Julia, the structures only contain data but no methods
-```
+```julia
 struct Car
 	color
 	brand
@@ -248,21 +248,28 @@ end
 information(c::Car) = "I'm a $(c.color) $(c.brand)"
 
 car = Car("yellow", "mercedes")
-information(car) # returns "I'm a yellow mercedes"
+information(car)
 ```
 
-Adding another _method_ to `information` to now also work on `Number`s
+##### Levels of dispatch
+- none: `f(x1,x2,x3,...)` constant expressive power
+- single: `x1.f(x2,x3,...)` linear expressive power
+- multiple `f(x1,x2,x3,...)` exponential expressive power
 
-```
-information(n::Number) = "I'm just a number"
-information(3.0)
+#### Sharing types
+Much simpler to define **new** operations on existing types
+
+- Extending existing operations
+```julia
+information(n::Number) = "I'm a number"
 ```
 
-While in Python 
+- Defining new operations
+```julia
+is_beautiful(c::Car) = (c.color == "rose gold")
 ```
-n = 1.0
-n.information() # ⚰️⚰️⚰️
-```
+
+How to do it in OOP? With inheritance one needs to use another name (`NewCar`) or edit the original class or simply drop (single) dispatch. 
 """
 
 # ╔═╡ 2cf41e6e-7b49-11eb-02bf-23174a7e8ce3

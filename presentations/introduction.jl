@@ -15,10 +15,6 @@ html"<button onclick='present()'>present</button>"
 md"""
 # Scientific programming workshop
 
-Good Scientific Practises
-- https://swcarpentry.github.io/good-enough-practices-in-scientific-computing/
-- https://arxiv.org/pdf/1210.0530v3.pdf
-
 The easiest way to learn and experiment with Julia is by starting an interactive session (also known as a read-eval-print loop or "REPL").
 
 So fire up your terminal and type `julia` or open your Julia executable
@@ -82,64 +78,28 @@ typeof("thursday seminar") # returns String
 ```
 """
 
-# ╔═╡ e47b0d74-7b7e-11eb-1c28-6b8764d83608
+# ╔═╡ 208cc082-7b7f-11eb-350d-01731695c4e9
 md"""
 ## Basic collections
 
-Indexing a collection like an array is done with brackets: `collection[index]`. The `index` is typically an integer, although some structures can have arbitrary indices, and you can define any indexing type for any collection you want.
+Indexing a collection is done with brackets: `collection[index]`. The `index` is typically an integer, but the indexing type can be (re)defined for any collection.
 
-**Julia indexing starts from 1**
+**JULIA INDEXING STARTS FROM 1**
 
-### Tuples
-Tuples are ordered immutable collections of elements. Use them to group together related data not necessarily of of the same type.
-
-Syntax: `(item1, item2, ...)`
-
-
-```julia
-myfavoritethings = ("mensa", "cats", π)
-myfavoritethings[1] # will return "mensa"
-```
-
-
-### NamedTuples
-
-These are exactly like tuples but also assign a name to each field they contain.
-
-Syntax: `(key1 = val1, key2 = val2, ...)`
-
-
-```julia
-nt = (x = 5, y = "str", z = 5/3)
-```
-
-These objects can be accessed with `[1]` like normal tuples, with they key symbol `[:key]` and also with `.key`.
-
-```julia
-nt[1]
-nt.x
-nt[:x] # will return 5
-```
-
-**Pro-tip**: You can use @unpack from `UnPack.jl` with named tuples!
-"""
-
-# ╔═╡ 208cc082-7b7f-11eb-350d-01731695c4e9
-md"""
 ### Arrays
 
-A Julia `Array` is a mutable and ordered collection of items of the same type.
+A Julia `Array` is a **mutable** and **ordered** collection of items of the same type.
 
 The dimensionality of the Julia array is important. 
-- A `Vector` is an array of dimension 1
-- A `Matrix` is an array of dimension 2. 
-The *element type* or *length* of an array contains is independent of its dimension.
+- A `Vector` is an `Array` of dimension 1
+- A `Matrix` is an `Array` of dimension 2. 
+The *element type* or *length* of an array is independent of its dimension.
 
 Syntax: `[item1, item2, ...]`
 
 ```julia
 myfriends = ["Karl", "Friedrich", "Vladimir", "Theodor", "Slavoj"]
-fibonacci = [1818, 1820, 1870, 1903, 1949]
+years = [1818, 1820, 1870, 1903, 1949]
 mixture = [1818, 1820, 1870, "Theodor", "Slavoj"]
 ```
 
@@ -148,7 +108,7 @@ The `mixture` array indeed has elements of the same type: the type `Any`: _the u
 **Vector of Vectors of Numbers and a Matrix of Numbers are two totally different things!**
 
 ```julia
-vec_vec_num = [[1, 2, 3], [4, 5], [6, 7, 8, 9]]
+vec_of_vec = [[1, 2, 3], [4, 5], [6, 7, 8, 9]]
 
 # To create a matrix
 
@@ -204,6 +164,7 @@ Ranges **do not store all elements in memory** like `Array`s (unless `collect`ed
 
 Ranges are also used to index into arrays:
 ```julia
+A = rand(10)
 A[1:3] # gets the first 3 elements of `A`
 A[end-2:end] # gets the last three elements of `A`
 ```
@@ -217,11 +178,61 @@ A[1:3, 1]
 
 # ╔═╡ d7be066a-7c26-11eb-3938-f15fdc5c1dfd
 md"""
-#### Exercise: basic operations with `Array`s
+#### Exercise: basic operations with `Array`s and `Range`s
 
-- Create 2 random vectors of equal size. Add them with the `+` operator. Now multiply them with `*`. Does it work? [Why not?](https://en.wikipedia.org/wiki/Multiplication_of_vectors)
+- Create 2 random vectors (with the `rand` function) of equal size and
+  - Add them with the `+` operator
+  - Multiply them with `*` operator. 
+  - Everything works ? [Why not?](https://en.wikipedia.org/wiki/Multiplication_of_vectors)
 
-- Create a matrix of zeros (use the `zeros` function) and set its element `(1,1)` to `1.0`. Now set the first two elements of the 3rd column to `2.0`.
+- Create a matrix of zeros (with the `zeros` function)
+  - Get its `(1,1)` element
+  - Set the first 3 elements of the 2rd column to `0.0`
+"""
+
+# ╔═╡ e47b0d74-7b7e-11eb-1c28-6b8764d83608
+md"""
+### Tuples
+Tuples are ordered immutable collections of elements. Use them to group together related data not necessarily of of the same type.
+
+Syntax: `(item1, item2, ...)`
+
+
+```julia
+myfavoritethings = ("mensa", "cats", π)
+myfavoritethings[1] # returns "mensa"
+```
+
+
+### NamedTuples
+
+These are exactly like tuples but also assign a name to each field they contain.
+
+Syntax: `(key1 = val1, key2 = val2, ...)`
+
+
+```julia
+myfavoritethings = (place="mensa", pets="cats", number=π)
+```
+
+These objects can be accessed with `[1]` like normal tuples, with they key symbol `[:key]` and also with `.key`.
+
+```julia
+nt[1]
+nt.place
+nt[:place] # returns "mensa"
+```
+
+**Pro-tip**: You can use @unpack from `UnPack.jl` with named tuples!
+"""
+
+# ╔═╡ 10ce2298-8189-11eb-0a07-2bc8fdc42b7e
+md"""
+#### Exercise: first taste of (im)mutability with `Tuple`s
+
+- Create a 3-tuple with a `String`, a `Number` and an `Array` fields
+  - Change `Number` field to twice its value. Does it work? Why (not)?
+  - Change the 1st element of the `Array` field to twice its value. Does it work? Why (not)?
 """
 
 # ╔═╡ 50103c82-7b87-11eb-397f-63f6c3e14497
@@ -242,7 +253,7 @@ end
 
 Example:
 ```julia
-for n ∈ 1:5
+for n ∈ 1:5 # \in
     println(n)
 end
 ```
@@ -284,7 +295,7 @@ a = [sin(x) for x in range(-π, +π, length=1000) if x > 0]
 
 ### Generator Expressions
 
-Comprehensions can also be written without the enclosing square brackets, producing a generator. This object can be iterated to produce values on demand, instead of allocating an array and storing them in advance
+Comprehensions can also be written without the enclosing square brackets, producing a generator. **This object can be iterated** to produce values on demand, instead of allocating an array and storing them in advance
 
 ```julia
 a = (evaluate_expensive_function(x) for x in range(-π, π, length=1000))
@@ -778,6 +789,10 @@ Here are some tips to minimise this time
 - Use Pluto notebooks to prototype (they promote a hygenic use of global scoped variables)
 
 [Read more](https://blog.higher-order.com/blog/2009/04/27/a-critique-of-impure-reason/)
+
+Good Scientific Practises
+- https://swcarpentry.github.io/good-enough-practices-in-scientific-computing/
+- https://arxiv.org/pdf/1210.0530v3.pdf
 """
 
 # ╔═╡ 8f7c3662-7b93-11eb-037a-dd5eab159125
@@ -1069,8 +1084,8 @@ const ± = Measurement
 
 import Base: *, +, zero # need to import when extending methods
 
-*(a::Number, m::Measurement) = Measurement(a * m.val, a * m.err)
-*(m::Measurement, a::Number) = Measurement(a * m.val, a * m.err)
+*(a::Number, m::Measurement) = Measurement(a * m.val, abs(a * m.err))
+*(m::Measurement, a::Number) = Measurement(a * m.val, abs(a * m.err))
 
 +(m1::Measurement, m2::Measurement) = Measurement(m1.val + m2.val, sqrt(m1.err^2 + m2.err^2))
 
@@ -1110,10 +1125,11 @@ import Measurements: ±
 # ╟─4f694984-7bfe-11eb-11d1-e9f1f0ed181b
 # ╟─07421cd6-7b6a-11eb-1fe0-a77384748767
 # ╟─783184c2-7b7e-11eb-1a2d-19ff7af16a74
-# ╟─e47b0d74-7b7e-11eb-1c28-6b8764d83608
 # ╟─208cc082-7b7f-11eb-350d-01731695c4e9
 # ╟─c01023c2-7b7f-11eb-2914-8d92e90752f3
 # ╟─d7be066a-7c26-11eb-3938-f15fdc5c1dfd
+# ╟─e47b0d74-7b7e-11eb-1c28-6b8764d83608
+# ╟─10ce2298-8189-11eb-0a07-2bc8fdc42b7e
 # ╟─50103c82-7b87-11eb-397f-63f6c3e14497
 # ╟─4fba05ba-7b87-11eb-2789-a9bd011721e3
 # ╟─4f8bc7f4-7b87-11eb-2df1-23bf6ed3f957

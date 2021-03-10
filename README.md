@@ -1,8 +1,8 @@
 # JuliaSeminar
 
-The goal of this seminar is to give a complete overview to specifics of the Julia language as well as general design patterns and pratises which are relevant for scientific programming. That is, ultimately, how to write performant albeit general and transparent code in Julia.
+The goal of this seminar is to give a complete overview to aspects of the Julia language as well as general design patterns and practices which are relevant for scientific programming. That is, ultimately, how to write performant albeit general and transparent code in Julia.
 
-## Scientific coding in Julia
+## Scientific programming in Julia
 
 #### Introduction
   - Variables
@@ -17,7 +17,7 @@ The goal of this seminar is to give a complete overview to specifics of the Juli
     - Parametric types
   - Scoping and Mutation
   
-#### Intermediate
+#### Intermediate topics
   - Linear Algebra (Standard Library)
   - Higher-order functions
   - Threading
@@ -25,15 +25,16 @@ The goal of this seminar is to give a complete overview to specifics of the Juli
   - Performance tips
   - Git tips (version control)
   
-#### Advanced
+#### Advanced topics
   - Metaprogramming
   - Code representations
   - Automatic differentiation
   - Basic ML
 
-### How to prepare:
+### How to prepare
 * Install the latest, stable, [Julia release](https://julialang.org/downloads/)
 
+### References
 The contents of this seminar were greatly inspired by other incredible workshops by
   - [Carsten Bauer](https://github.com/crstnbr)
   - [George Datseris](https://github.com/Datseris)
