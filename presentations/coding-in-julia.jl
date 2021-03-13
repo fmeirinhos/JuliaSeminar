@@ -252,9 +252,9 @@ information(car)
 ```
 
 ##### Levels of dispatch
-- none: `f(x1,x2,x3,...)` constant expressive power
-- single: `x1.f(x2,x3,...)` linear expressive power
-- multiple `f(x1,x2,x3,...)` exponential expressive power
+- none: `f(x1,x2,x3,...)` constant expressive power (e.g., Python functions)
+- single: `(x1::T1).f(x2,x3,...)` linear expressive power (e.g., Python class methods)
+- multiple `f(x1::T1,x2::T2,x3,...)` exponential expressive power (Julia's core  paradigm)
 
 #### Sharing types
 Much simpler to define **new** operations on existing types
@@ -263,6 +263,7 @@ Much simpler to define **new** operations on existing types
 ```julia
 information(n::Number) = "I'm a number"
 ```
+Give several functions the same name, because they perform conceptually similar tasks, but operate on different types.
 
 - Defining new operations
 ```julia
