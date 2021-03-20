@@ -405,7 +405,7 @@ collatz(100) == 25
 
 Challenge: can you do it without loops?
 
-**Protip**: make a type-stable function by using `÷`, (`\div<TAB>`): In Julia `/` is the floating point devision operator and thus `n/m` is always a float number even if `n, m` are integers.
+**Pro-tip**: make a type-stable function by using `÷`, (`\div<TAB>`): In Julia `/` is the floating point devision operator and thus `n/m` is always a float number even if `n, m` are integers.
 """
 
 # ╔═╡ 59881288-7b82-11eb-05cf-1fe54d94d2dd
@@ -504,17 +504,15 @@ f2 = x -> undefined
 (x -> x + 1)(3) # returns 4
 ```
 
-- Incredibly useful for disposable functions. Consider `sum`, which can
-    - sum a container `sum([1,2,3]) = 6`
-    - sum a function applied to all elements of a container
+- Incredibly useful for disposable functions. Consider `map`, which maps a function onto the elements of a container
 ```julia
 add_1(x) = x + 1
-sum(add_1, [1,2,3]) == sum([1+1, 2+1, 3+1]) == 9
+map(add_1, [1,2,3]) == [1+1, 2+1, 3+1]
 ```
 
 The `add_1` is simply a **partial function application**: take the `+` operator, which adds 2 values, to `+1`, acting just on 1 value
 ```julia
-sum(x -> x + 1, [1,2,3]) == 9
+map(x -> x + 1, [1,2,3]) == [1+1, 2+1, 3+1]
 ```
 """
 
@@ -522,7 +520,7 @@ sum(x -> x + 1, [1,2,3]) == 9
 md"""
 #### Exercise: Swap arguments when calling a function
 
-Create a function `swap` using the previously defined `swap_args` that calls any function `f` but with its arguments swapped.
+Create a function `swap` using the previously defined `swap_args` that returns a new `f'` but with its arguments swapped.
 
 Example:
 ```julia
@@ -541,7 +539,7 @@ Tip: You can also use `reverse`, which shares the same implementation as `swap_a
 # ╔═╡ fc97a2e8-7b81-11eb-04e8-41c700b9d2ec
 #= md"""
 ```julia
-swap(g) = (x...) -> g(swap_args(x)...)
+swap(g) = (x...) -> g(reverse(x)...)
 ```
 
 without anynymous functions this would be
@@ -550,323 +548,13 @@ without anynymous functions this would be
 function swap(g)
 	
 	function helper(args...)		
-		return g(swap_args(args)...)
+		return g(reverse(args)...)
 	end
 	
 	return helper
 end
 ```
 """ =#
-
-# ╔═╡ 520e5cb2-7b87-11eb-0748-b39dbd03ca14
-md"""
-### Anonating types
-
-- You can almost always ignore types
-**But why would you?** With minimal effort they bring a lot of information, possibly speed and make your programs safer
-
-- Can annotate the types of our arguments:
-```julia
-ff(x::Int, y) = x * y
-
-ff(3, 4) # returns 12
-
-ff(3.0, 4) # fails (method not defined!)
-```
-
-- Can write a _convertion for the return type_
-```julia
-function gg(x::Int, y)::Int
-    return x * y
-end
-
-gg(3, 4) # returns 12
-
-gg(3, 4.1) # errors
-```
-
-**This is very different from annotating the return type**. Because Julia is dynamic it's not possible to guarantee the return type... The maximum one can do is to force a type convertion.
-However, there [may be some hope](https://github.com/yuyichao/FunctionWrappers.jl)
-"""
-
-# ╔═╡ a05faaea-7b87-11eb-0c4c-77533db92365
-# Joke: It's like a condom: Better without but safer with
-
-# ╔═╡ 2d756e8a-7b88-11eb-0641-79cb95e33aa1
-md"""
-### Multiple dispatch
-
-(this will keep popping up)
-
-**Calling the right implementation of a function based on the arguments**. Only the positional arguments (and type) are used to look up the correct method.
-
-Happening all the time under the hood or on paper: multiplying scalars is completely different from multiplying matrices.
-
-In Julia a function (i.e., the same `name`) may contain multiple concrete implementations (called Methods), selected via multiple dispatch.
-
-- Question: what about functions in OOP languages?
-
-###### Examples of multiple dispatch:
-```julia
-my_sum(a::Int, b::Int) = a + b
-my_sum(a::String, b::String) = a * " " * b # string concatenation is achieved by (*)
-```
-
-The dispatch mechanism chooses the most specific method for the input types
-
-```julia
-my_sum(2, 3) # returns 5
-my_sum("Fuck", "COVID19") # returns a concatenated string
-my_sum("Yo", 10) # errors
-
-# Check what exactly is being called with a @which macro
-@which my_sum(2,3)
-```
-
-Julia has got your back in case of ambiguities
-```julia
-f(x, y::Int) = 1
-f(x::Int, y) = 2
-f(2,3) # errors
-```
-"""
-
-# ╔═╡ 6efa5e40-7b85-11eb-2459-9f052c340c4f
-md"""
-#### Exercise: Recursive `length`
-Write a function that calculates the total number of elements inside nested arrays, ultimately containing numbers
-
-Examples:
-- `n_elements([1,1,1]) == 3`
-- `n_elements([[1,], [1,], [1,1], [1,1]]) == 6`
-- `n_elements([[], [], [1,2]]) == 2`
-- `n_elements([[[2,1], [3,4]], [[1,2],]]) == 6`
-- `n_elements([[1,2,[1,2]]]) == 4`
-
-Consider all arrays to have an `AbstractArray` type.
-
-Protip: Don't oversmart yourself: start **SIMPLE** and only then move on to the edge cases
-"""
-
-# ╔═╡ 4d6378d0-7c2e-11eb-0c59-e10c86826945
-#= md"""
-```julia
-n_elements(::Number) = 1
-n_elements(a::AbstractArray) = isempty(a) ? 0 : sum(n_elements, a)
-```
-""" =#
-
-# ╔═╡ 23a1f126-7cc8-11eb-0d95-7f42c64921b0
-md"""
-#### Exercise: Add (+) for `String`s to Julia
-
-No functions in Julia are more special than others, including operators. To add a `method` to the `(+)` operator `function`, import it from the Julia `Base` library (since it's Julia who owns `+`)
-```julia
-import Base: +
-```
-- Extend `(+)` to also work with `String`s (e.g., string concatenation with a space)
-- Use `sum` to sum an array of `String`s
-
-Note: Since we don't own neither `(+)` or `String` this is called _type piracy_ and should be avoided as it can lead to unexpected behaviour
-
-String concatenation (without a space in between) is already implemented, with the `(*)` operator.
-- What is the identity `String` under multiplication?
-"""
-
-# ╔═╡ 29b15dd0-7cc9-11eb-08ad-f301320aca17
-#= md"""
-```julia
-Base.:+(a::String, b::String) = a * " " * b
-
-"Hello" + "my" + "friends"
-
-sum(["I", "have", "no", "idea", "what", "I", "am", "doing"])
-```
-""" =#
-
-# ╔═╡ 4acaca00-7b8a-11eb-0a46-894196ba8141
-md"""
-## Scoping
-
-The [scope of a variable]((https://docs.julialang.org/en/v1/manual/variables-and-scoping/)) is the region of code within which a variable is visible.
-
-Variable scoping helps avoid variable naming conflicts. The concept is intuitive: two functions can both have arguments called `x` without the two `x`'s referring to the same thing.
-
-- Global scope
-If a variable is in the global scope (of a module) it is visible even locally
-
-```julia
-x = 1
-f() = x
-f() # will return 1
-```
-
-Note: [A module](https://docs.julialang.org/en/v1/manual/modules/#modules) are workspaces with their own global scope. This is useful because it allows creation of global variables without conflicts! (When you use `REPL` you are in the `Main` module (`@__MODULE__`) so you can define anything you want without having to worry about conflicts with
-
-- Local scope
-When you create a function / structure / are inside a loop a local scope is created
-
-```julia
-x = 1
-function f()
-	x = 2
-	return x
-end
-f() # will return 2
-```
-
-### Blocks
-
-`begin` blocks are great as well but do not introduce a local scope
-```julia
-y = begin
-	c = 3
-	3c + 2
-end
-c # returns 3
-```
-
-so `begin` blocks find their use in multi-line definitions, e.g.,
-```julia
-f = x -> begin
-	c = 2
-	2c + x
-end
-```
-
-To avoid polluting the global scope (in your notebooks) use `let` blocks
-```julia
-x = let
-	b = 1 # temporary variable
-	2b + 2
-end
-b # will throw an error because b is not defined!
-```
-"""
-
-# ╔═╡ ba8360be-7b85-11eb-19dd-a382320176dc
-md"""
-## Passing by reference: mutating vs. non-mutating functions
-Sit down kiddo, let's talk mutability
-
-**Mutable** data can be changed in-place, i.e. literally in the place in memory where the data is stored.
-
-**Immutable** data cannot be changed after creation, and thus the only way to change part of immutable data is to actually make a brand new immutable object from scratch.
-
-For example, `Vector`s are mutable
-```julia
-v = [5, 5, 5]
-v[1] = 6 # change first entry of x
-v
-```
-
-But e.g. `Tuple`s are immutable
-```julia
-t = (5, 5, 5)
-t[1] = 6
-t
-```
-Note that while a `Tuple` is immutable, its elements may not be!
-
-### Mutable entities in Julia are passed by reference
-When passing a mutable container, e.g., an `Array`, this is always passed by reference (i.e., a reference and not a copy of the variable is passed)
-```julia
-f(v) = (v[1] = 99)
-
-x = [1,2,3]
-f(x)
-x[1] == 9
-```
-**Pro-tip**: in Julia there's a _convention_ to add a `!` to the name of functions that _mutate_ their arguments: `f!(v) = (v[1] = 99)`
-
-### Do Julia algebraic operators such as `+=` operate in-place?
-Consider the very simple example
-
-```julia
-a = 1
-b = a
-a += 2
-b # returns 1
-```
-
-The operation does not change the values in `a` but **REBINDS** the name `a` to the result of `a + 2a`, which of course is a new array.
-
-Any operation such as `a+=2a` is just _syntatic sugar_ for
-```julia
-temp = a + 2a
-a = temp
-```
-
-###### In Julia **ALL** updating operators are not in-place
-(there are ways around this, but more on that later)
-
-Note: if you are coming from Python you may have an unhealthy relationship with `+=`-like operators: they behave like the above example, but with `Numpy` they act in-place (i.e., mutate the arrays).
-
-In Julia, with an array, the behaviour is just like as the example with a scalar,
-
-```julia
-a = [1,2]
-b = a
-
-a += 2a
-b
-```
-"""
-
-# ╔═╡ b5c6f97c-7b90-11eb-0143-191c0a29ae5f
-md"""
-### Meta-discussion: mutable vs immutable algorithms
-
-Immutability doesn't really exist: immutability implies time-independence... and there's nothing really stopping time (at least until the heat-death of the universe).
-
-The very process of storing information (that is ordering bits) requires mutation.
-But we can achieve immutability at least syntatically.
-
-
-##### Tips to minimise the amount of time developing scientific code
-by denying mutation and and promoting good hygiene
-
-_aka how to correct bad programming habits which hurt more than help_
-
-- Use `let` blocks to reduce global scope pollution
-    - Global variables are **very** prone to be mutated since they don't have to be passed as an argument explicitely
-
-
-- Pure thoughts: decompose programs into (pure) functions:
-    - Same return value for the same arguments: no variation on non-local variables, (mutable) referenced arguments, etc.
-    - Side-effects-free evaluation: no variation on non-local variables, (mutable) referenced arguments, etc.
-    - Break software into chunks to fit into the most limited memory: human memory.
-
-
-- Give functions and variables meaningful names
-    - Ditch `Jupyter` for 95% of the cases: use `Pluto` notebooks to prototype
-
-
-- Use tuples / structs to avoid repetition
-    - `a1 = 1, a2 = 2` becomes `as = (1, 2)`
-
-
-- Be defensive
-    - Add `@assert`s to ensure validity of your inputs / results
-    - Generate unit tests for your functions: these are as important as the problem you are ultimately solving
-
-
-- Do NOT oversmart yourself:
-    - avoid _premature optimisation_: write clear and concise code and only think about optimisations after unit testing
-    - avoid _premature pessimisation_: take a few good minutes and sketch on paper the data structures / algorithm design before writing any code
-
-
-- Abuse of your colleagues to review your code and warn you about common pitfalls
-
-
-- Require of your code the same standards you require others' calculations / experiments / general care in life
-
-
-Read more on good Scientific Practises
-- [1](https://swcarpentry.github.io/good-enough-practices-in-scientific-computing/)
-- [2](https://arxiv.org/pdf/1210.0530v3.pdf)
-- [3](https://blog.higher-order.com/blog/2009/04/27/a-critique-of-impure-reason/)
-"""
 
 # ╔═╡ 8f7c3662-7b93-11eb-037a-dd5eab159125
 md"""
@@ -955,7 +643,7 @@ end;
 ```
 """ =#
 
-# ╔═╡ 7c9dd076-7bfe-11eb-14df-c92ae128b297
+# ╔═╡ 466f20aa-8977-11eb-007a-b9034b0156ff
 md"""
 ## Types
 
@@ -981,9 +669,102 @@ f(x) = 3x; f isa Any
 
 **When type annotation is ommited, the method accepts values of any type.**
 
-Everything that will follow below will be about looking at subsets of `Any`.
+**ANY** type we will look at will be a subset of `Any`.
+"""
 
+# ╔═╡ 520e5cb2-7b87-11eb-0748-b39dbd03ca14
+md"""
+### Anonating types
 
+- You can almost always ignore types
+**But why would you?** With minimal effort they bring a lot of information, possibly speed and make your programs safer
+
+- Can annotate the types of our arguments:
+```julia
+ff(x::Int, y) = x * y
+
+ff(3, 4) # returns 12
+
+ff(3.0, 4) # fails (method not defined!)
+```
+
+- Can write a _convertion for the return type_
+```julia
+function gg(x::Int, y)::Int
+    return x * y
+end
+
+gg(3, 4) # returns 12
+
+gg(3, 4.1) # errors
+```
+
+**This is very different from annotating the return type**. Because Julia is dynamic it's not possible to guarantee the return type... The maximum one can do is to force a type convertion.
+However, there [may be some hope](https://github.com/yuyichao/FunctionWrappers.jl)
+"""
+
+# ╔═╡ 2d756e8a-7b88-11eb-0641-79cb95e33aa1
+md"""
+### Multiple dispatch 🙏
+
+**Calling the right implementation of a function based on the arguments**. Only the positional arguments and types are used to look up the correct method.
+
+Happening all the time under the hood or on paper: multiplying scalars is completely different from multiplying matrices.
+
+In Julia a function (i.e., the same `name`) may contain multiple concrete implementations (called Methods), selected via multiple dispatch.
+
+- Question: what about functions in OOP languages?
+
+###### Examples of multiple dispatch:
+```julia
+my_sum(a::Int, b::Int) = a + b
+my_sum(a::String, b::String) = a * " " * b # string concatenation is achieved by (*)
+```
+
+The dispatch mechanism chooses the most specific method for the input types
+
+```julia
+my_sum(2, 3) # returns 5
+my_sum("My", "house") # returns a concatenated string
+my_sum("Yo", 10) # errors
+
+# Check what exactly is being called with a @which macro
+@which my_sum(2,3)
+```
+
+Julia has got your back in case of ambiguities
+```julia
+f(x, y::Int) = 1
+f(x::Int, y) = 2
+f(2,3) # errors
+```
+"""
+
+# ╔═╡ 6efa5e40-7b85-11eb-2459-9f052c340c4f
+md"""
+#### Exercise: Recursive `length`
+Write a function that calculates the total number of elements inside nested arrays, ultimately containing numbers
+
+Examples:
+- `n_elements([1,1,1]) == 3`
+- `n_elements([[1,], [1,], [1,1], [1,1]]) == 6`
+- `n_elements([[], [], [1,2]]) == 2`
+- `n_elements([[[2,1], [3,4]], [[1,2],]]) == 6`
+- `n_elements([[1,2,[1,2]]]) == 4`
+
+Consider all arrays to have an `AbstractArray` type and numbers to have a `Number` type.
+"""
+
+# ╔═╡ 4d6378d0-7c2e-11eb-0c59-e10c86826945
+#= md"""
+```julia
+n_elements(::Number) = 1
+n_elements(a::AbstractArray) = isempty(a) ? 0 : sum(n_elements, a)
+```
+""" =#
+
+# ╔═╡ 7c9dd076-7bfe-11eb-14df-c92ae128b297
+md"""
 ### Abstract Types
 
 **Abstract types cannot be instantiated**, and serve only to establish some conceptual hierarchy between types: these are the backbone of the type system.
@@ -1126,13 +907,16 @@ struct 👨 <: Mammal end
 struct 👩 <: Mammal end
 struct 🐸 <: Reptile end
 
-interaction(::🐍, ::👩) = "These fruits are to die for"
-interaction(::👩, ::👨) = "Mmmmmm, you tried these fruits before?"
-interaction(::👨, ::👩) = "Still got some more?"
-
 adam = 👨()
 eve = 👩()
 serpent = 🐍()
+
+@show interaction(serpent, eve)
+@show interaction(eve, adam)
+
+interaction(::🐍, ::👩) = "These fruits are to die for"
+interaction(::👩, ::👨) = "Mmmmmm, you tried these fruits before?"
+interaction(::👨, ::👩) = "Still got some more?"
 
 @show interaction(serpent, eve)
 @show interaction(eve, adam)
@@ -1291,6 +1075,194 @@ md"""
 $y(t=0.0) = 1.0 \pm 0.3$
 """
 
+# ╔═╡ 4acaca00-7b8a-11eb-0a46-894196ba8141
+md"""
+## Scoping
+
+The [scope of a variable]((https://docs.julialang.org/en/v1/manual/variables-and-scoping/)) is the region of code within which a variable is visible.
+
+Variable scoping helps avoid variable naming conflicts. The concept is intuitive: two functions can both have arguments called `x` without the two `x`'s referring to the same thing.
+
+- Global scope
+If a variable is in the global scope (of a module) it is visible even locally
+
+```julia
+x = 1
+f() = x
+f() # will return 1
+```
+
+Note: [A module](https://docs.julialang.org/en/v1/manual/modules/#modules) are workspaces with their own global scope. This is useful because it allows creation of global variables without conflicts! (When you use `REPL` you are in the `Main` module (`@__MODULE__`) so you can define anything you want without having to worry about conflicts with
+
+- Local scope
+When you create a function / structure / are inside a loop a local scope is created
+
+```julia
+x = 1
+function f()
+	x = 2
+	x
+end
+f() # will return 2
+```
+
+### Blocks
+
+`begin` blocks are great as well but do not introduce a local scope
+```julia
+y = begin
+	c = rand(10)
+	3c + 2maximum(c)
+end
+c # is defined
+```
+
+except on, e.g., multi-line function definitions (remember functions introduce local scope!),
+```julia
+f = x -> begin
+	b = rand(10)
+	3b + x * maximum(c)
+end
+```
+
+- Question: Find the rogue global variable
+
+To avoid polluting the global scope (in your notebooks) prefer the `let` blocks
+```julia
+x = let
+	d = rand(10) # temporary variable need for the calculation
+	3d + 2maximum(d)
+end
+d # will throw an error because b is not defined!
+```
+"""
+
+# ╔═╡ ba8360be-7b85-11eb-19dd-a382320176dc
+md"""
+## Passing by reference: mutating vs. non-mutating functions
+Sit down kiddo, let's talk mutability
+
+**Mutable** data can be changed in-place, i.e. literally in the place in memory where the data is stored.
+
+**Immutable** data cannot be changed after creation, and thus the only way to change part of immutable data is to actually make a brand new immutable object from scratch.
+
+For example, `Vector`s are mutable
+```julia
+v = [5, 5, 5]
+v[1] = 6 # change first entry of x
+v
+```
+
+But e.g. `Tuple`s are immutable
+```julia
+t = (5, 5, 5)
+t[1] = 6
+t
+```
+Note that while a `Tuple` is immutable, its elements may not be!
+
+### Mutable entities in Julia are passed by reference
+When passing a mutable container, e.g., an `Array`, this is always passed by reference (i.e., a reference and not a copy of the variable is passed)
+```julia
+function f(v)
+	v[1] = 99
+end
+
+x = [1,2,3]
+f(x)
+x[1] == 9
+```
+**Pro-tip**: in Julia there's a _convention_ to add a `!` to the name of functions that _mutate_ their arguments: `f!(v) = v[1] = 99`
+
+### Do Julia algebraic operators such as `+=` operate in-place?
+Consider the very simple example
+
+```julia
+a = 1
+b = a
+a += 2
+b # returns 1
+```
+
+The operation does not change the values in `a` but **REBINDS** the name `a` to the result of `a + 2a`, which of course is a new array.
+
+Any operation such as `a+=2a` is just _syntatic sugar_ for
+```julia
+temp = a + 2a
+a = temp
+```
+
+###### In Julia **ALL** updating operators are not in-place
+(there are ways around this, but more on that later)
+
+Note: if you are coming from Python you may have an unhealthy relationship with `+=`-like operators: they behave like the above example, but with `Numpy` they act in-place (i.e., mutate the arrays).
+
+In Julia, with an array, the behaviour is just like as the example with a scalar,
+
+```julia
+a = [1,2]
+b = a
+
+a += 2a
+b
+```
+"""
+
+# ╔═╡ b5c6f97c-7b90-11eb-0143-191c0a29ae5f
+md"""
+### Meta-discussion: mutable vs immutable algorithms
+
+Immutability doesn't really exist: immutability implies time-independence... and there's nothing really stopping time (at least until the heat-death of the universe).
+
+The very process of storing information (that is ordering bits) requires mutation.
+But we can achieve immutability at least syntatically.
+
+
+##### Tips to minimise the amount of time developing scientific code
+by denying mutation and and promoting good hygiene
+
+_aka how to correct bad programming habits which hurt more than help_
+
+- Use `let` blocks to reduce global scope pollution
+    - Global variables are **very** prone to be mutated since they don't have to be passed as an argument explicitely
+
+
+- Pure thoughts: decompose programs into (pure) functions:
+    - Same return value for the same arguments: no variation on non-local variables, (mutable) referenced arguments, etc.
+    - Side-effects-free evaluation: no variation on non-local variables, (mutable) referenced arguments, etc.
+    - Break software into chunks to fit into the most limited memory: human memory.
+
+
+- Give functions and variables meaningful names
+    - Ditch `Jupyter` for 95% of the cases: use `Pluto` notebooks to prototype
+
+
+- Use tuples / structs to avoid repetition
+    - `a1 = 1, a2 = 2` becomes `as = (1, 2)`
+
+
+- Be defensive
+    - Add `@assert`s to ensure validity of your inputs / results
+    - Generate unit tests for your functions: these are as important as the problem you are ultimately solving
+
+
+- Do NOT oversmart yourself:
+    - avoid _premature optimisation_: write clear and concise code and only think about optimisations after unit testing
+    - avoid _premature pessimisation_: take a few good minutes and sketch on paper the data structures / algorithm design before writing any code
+
+
+- Abuse of your colleagues to review your code and warn you about common pitfalls
+
+
+- Require of your code the same standards you require others' calculations / experiments / general care in life
+
+
+Read more on good Scientific Practises
+- [1](https://swcarpentry.github.io/good-enough-practices-in-scientific-computing/)
+- [2](https://arxiv.org/pdf/1210.0530v3.pdf)
+- [3](https://blog.higher-order.com/blog/2009/04/27/a-critique-of-impure-reason/)
+"""
+
 # ╔═╡ 7eb72d6c-7bfe-11eb-3bbc-6bf209eac85e
 #= md"""
 Because `euler_integrator` is generic, it simply works
@@ -1335,19 +1307,14 @@ import Measurements: ±
 # ╟─3d084548-7b83-11eb-256b-19eb53b8ed58
 # ╟─8af802a2-7b81-11eb-3aee-a72be06a7db5
 # ╟─fc97a2e8-7b81-11eb-04e8-41c700b9d2ec
-# ╟─520e5cb2-7b87-11eb-0748-b39dbd03ca14
-# ╟─a05faaea-7b87-11eb-0c4c-77533db92365
-# ╟─2d756e8a-7b88-11eb-0641-79cb95e33aa1
-# ╟─6efa5e40-7b85-11eb-2459-9f052c340c4f
-# ╟─4d6378d0-7c2e-11eb-0c59-e10c86826945
-# ╟─23a1f126-7cc8-11eb-0d95-7f42c64921b0
-# ╟─29b15dd0-7cc9-11eb-08ad-f301320aca17
-# ╟─4acaca00-7b8a-11eb-0a46-894196ba8141
-# ╟─ba8360be-7b85-11eb-19dd-a382320176dc
-# ╟─b5c6f97c-7b90-11eb-0143-191c0a29ae5f
 # ╟─8f7c3662-7b93-11eb-037a-dd5eab159125
 # ╟─d4a4eb0e-83ec-11eb-2e2b-254e505e6996
 # ╟─b898f724-7b93-11eb-3032-d30519dabdb2
+# ╟─466f20aa-8977-11eb-007a-b9034b0156ff
+# ╟─520e5cb2-7b87-11eb-0748-b39dbd03ca14
+# ╟─2d756e8a-7b88-11eb-0641-79cb95e33aa1
+# ╟─6efa5e40-7b85-11eb-2459-9f052c340c4f
+# ╟─4d6378d0-7c2e-11eb-0c59-e10c86826945
 # ╟─7c9dd076-7bfe-11eb-14df-c92ae128b297
 # ╟─7e5de6f8-7bfe-11eb-1d07-dbd9ea09b3c1
 # ╟─343b1ea2-8422-11eb-215f-a3dd15480088
@@ -1358,4 +1325,7 @@ import Measurements: ±
 # ╟─7ef91614-7bfe-11eb-0a36-1d5546ce9691
 # ╟─9a91ee9e-7c05-11eb-3401-eb252b4bdb45
 # ╟─7ed04e96-7bfe-11eb-0732-251e7f273c09
+# ╟─4acaca00-7b8a-11eb-0a46-894196ba8141
+# ╟─ba8360be-7b85-11eb-19dd-a382320176dc
+# ╟─b5c6f97c-7b90-11eb-0143-191c0a29ae5f
 # ╟─7eb72d6c-7bfe-11eb-3bbc-6bf209eac85e
