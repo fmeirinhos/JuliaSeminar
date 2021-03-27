@@ -1075,6 +1075,29 @@ md"""
 $y(t=0.0) = 1.0 \pm 0.3$
 """
 
+# ╔═╡ 7eb72d6c-7bfe-11eb-3bbc-6bf209eac85e
+#= md"""
+Because `euler_integrator` is generic, it simply works
+
+```julia
+using Plots
+
+ys_measurement = euler_integrator(f, 1.0 ± 0.3, ts)
+
+vals = [v.val for v in ys_measurement]
+errs = [v.err for v in ys_measurement]
+
+plot(ts, vals, label="y(t)", xlabel="t")
+plot!(ts, vals-errs; 
+	label="err", fillrange=vals+errs, fillalpha=0.2, color=:red, alpha=0.0)
+```
+
+Our results are **at all** correct because we assumed our measurements to always be independent of each other. Let's use a proper implementation (In a library we have installed called `Measurements.jl` that fixes that
+```julia
+import Measurements: ±
+```
+""" =#
+
 # ╔═╡ 4acaca00-7b8a-11eb-0a46-894196ba8141
 md"""
 ## Scoping
@@ -1170,7 +1193,7 @@ end
 
 x = [1,2,3]
 f(x)
-x[1] == 9
+x[1] == 99
 ```
 **Pro-tip**: in Julia there's a _convention_ to add a `!` to the name of functions that _mutate_ their arguments: `f!(v) = v[1] = 99`
 
@@ -1207,84 +1230,6 @@ a += 2a
 b
 ```
 """
-
-# ╔═╡ b5c6f97c-7b90-11eb-0143-191c0a29ae5f
-md"""
-### Meta-discussion: mutable vs immutable algorithms
-
-Immutability doesn't really exist: immutability implies time-independence... and there's nothing really stopping time (at least until the heat-death of the universe).
-
-The very process of storing information (that is ordering bits) requires mutation.
-But we can achieve immutability at least syntatically.
-
-
-##### Tips to minimise the amount of time developing scientific code
-by denying mutation and and promoting good hygiene
-
-_aka how to correct bad programming habits which hurt more than help_
-
-- Use `let` blocks to reduce global scope pollution
-    - Global variables are **very** prone to be mutated since they don't have to be passed as an argument explicitely
-
-
-- Pure thoughts: decompose programs into (pure) functions:
-    - Same return value for the same arguments: no variation on non-local variables, (mutable) referenced arguments, etc.
-    - Side-effects-free evaluation: no variation on non-local variables, (mutable) referenced arguments, etc.
-    - Break software into chunks to fit into the most limited memory: human memory.
-
-
-- Give functions and variables meaningful names
-    - Ditch `Jupyter` for 95% of the cases: use `Pluto` notebooks to prototype
-
-
-- Use tuples / structs to avoid repetition
-    - `a1 = 1, a2 = 2` becomes `as = (1, 2)`
-
-
-- Be defensive
-    - Add `@assert`s to ensure validity of your inputs / results
-    - Generate unit tests for your functions: these are as important as the problem you are ultimately solving
-
-
-- Do NOT oversmart yourself:
-    - avoid _premature optimisation_: write clear and concise code and only think about optimisations after unit testing
-    - avoid _premature pessimisation_: take a few good minutes and sketch on paper the data structures / algorithm design before writing any code
-
-
-- Abuse of your colleagues to review your code and warn you about common pitfalls
-
-
-- Require of your code the same standards you require others' calculations / experiments / general care in life
-
-
-Read more on good Scientific Practises
-- [1](https://swcarpentry.github.io/good-enough-practices-in-scientific-computing/)
-- [2](https://arxiv.org/pdf/1210.0530v3.pdf)
-- [3](https://blog.higher-order.com/blog/2009/04/27/a-critique-of-impure-reason/)
-"""
-
-# ╔═╡ 7eb72d6c-7bfe-11eb-3bbc-6bf209eac85e
-#= md"""
-Because `euler_integrator` is generic, it simply works
-
-```julia
-using Plots
-
-ys_measurement = euler_integrator(f, 1.0 ± 0.3, ts)
-
-vals = [v.val for v in ys_measurement]
-errs = [v.err for v in ys_measurement]
-
-plot(ts, vals, label="y(t)", xlabel="t")
-plot!(ts, vals-errs; 
-	label="err", fillrange=vals+errs, fillalpha=0.2, color=:red, alpha=0.0)
-```
-
-Our results are **at all** correct because we assumed our measurements to always be independent of each other. Let's use a proper implementation (In a library we have installed called `Measurements.jl` that fixes that
-```julia
-import Measurements: ±
-```
-""" =#
 
 # ╔═╡ Cell order:
 # ╟─4f694984-7bfe-11eb-11d1-e9f1f0ed181b
@@ -1325,7 +1270,6 @@ import Measurements: ±
 # ╟─7ef91614-7bfe-11eb-0a36-1d5546ce9691
 # ╟─9a91ee9e-7c05-11eb-3401-eb252b4bdb45
 # ╟─7ed04e96-7bfe-11eb-0732-251e7f273c09
+# ╟─7eb72d6c-7bfe-11eb-3bbc-6bf209eac85e
 # ╟─4acaca00-7b8a-11eb-0a46-894196ba8141
 # ╟─ba8360be-7b85-11eb-19dd-a382320176dc
-# ╟─b5c6f97c-7b90-11eb-0143-191c0a29ae5f
-# ╟─7eb72d6c-7bfe-11eb-3bbc-6bf209eac85e
