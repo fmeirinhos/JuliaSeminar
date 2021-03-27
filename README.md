@@ -19,13 +19,11 @@ The goal of this seminar is to give a complete overview to aspects of the Julia 
   
 #### Intermediate topics
   - Linear Algebra (Standard Library)
-  - Higher-order functions
-  - Threading
-  - Profiling
-  - Performance tips
-  - Git tips (version control)
+  - Higher-order and pure functions
+  - Profiling & optimisations
   
 #### Advanced topics
+  - Threading
   - Metaprogramming
   - Code representations
   - Automatic differentiation
@@ -35,8 +33,8 @@ The goal of this seminar is to give a complete overview to aspects of the Julia 
 * Install the latest, stable, [Julia release](https://julialang.org/downloads/)
 
 ### References
-The contents of this seminar were greatly inspired by other incredible workshops by
+The contents of this seminar were inspired by other incredible workshops by
   - [Carsten Bauer](https://github.com/crstnbr)
   - [George Datseris](https://github.com/Datseris)
 
-as well as the offical Julia documention and various Discourse, Reddit and StackOverflow discussions.
+as well as the offical Julia documention, JuliaCon presentations and various Discourse, Reddit and StackOverflow discussions.
