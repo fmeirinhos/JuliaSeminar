@@ -1,8 +1,17 @@
 ### A Pluto.jl notebook ###
-# v0.12.20
+# v0.12.21
 
 using Markdown
 using InteractiveUtils
+
+# ╔═╡ 59afc220-9195-11eb-2384-29ae6f4aa263
+md"""
+### REPL 101
+
+- `]` enters the package manager
+- `;` enters the terminal
+- `?` gives you the documentation of a function
+"""
 
 # ╔═╡ e5c840d8-8978-11eb-37fa-77fb05a3d821
 md"""
@@ -43,7 +52,7 @@ C = cat(A,B,dims=1) # What would happens if `dims=2`
 ```
 
 ### Linear indexing
-When exactly one index `i` is provided, that index no longer represents a location in a particular dimension of the array but the `i`th element using the column-major order
+When exactly one index `i` is provided, that index no longer represents a location in a particular dimension of the array but the `i`th element using the **column-major order**
 ```julia
 A = [2 6; 4 7; 3 1]
 
@@ -180,7 +189,7 @@ md"""
 """
 
 # ╔═╡ 247b2cf8-8ed3-11eb-19ee-fd0f17cec519
-md"""
+#= md"""
 ##### Solution:
 
 ```julia
@@ -243,7 +252,7 @@ vals2, vecs2 = eigen(h2);
 @show vecs1[:,1]; # Vectors all pointing in the same direction
 @show vecs2[:,1]; # Vectors aligned with σˣ (equal super-position of eigenstates)
 ```
-"""
+""" =#
 
 # ╔═╡ 9ba8170a-7b50-11eb-0aac-adc493e1f386
 md"""
@@ -464,7 +473,7 @@ Tip: A diagonal matrix can be created out of the vector of eigenvalues with the 
 """
 
 # ╔═╡ 45c45594-8ca4-11eb-1db9-6187459bf306
-md"""
+#= md"""
 ##### Solution:
 
 ```julia
@@ -500,7 +509,7 @@ end
 # Numerical renormalization group
 rg(;N,α,steps=0) = foldl((h, i) -> add_chain(h, N+i, α), 1:steps; init=H(N, α))
 ```
-"""
+""" =#
 
 # ╔═╡ 4bee5324-8eeb-11eb-326b-efba53215f34
 md"""
@@ -594,13 +603,478 @@ Read more on good Scientific Practises
 # ╔═╡ 8ac22e72-8978-11eb-1674-e1b95403e215
 md"""
 # Performance
+We will step out of the beautiful pure world of functional programming and dive deep into the messy world of algorithm optimisation.
+
+While some topics will be related to avoiding common pitfalls when writing in Julia, other universal topics on algorithm optimisation will also be covered.
 
 ## Profiling
+In order to know where and what to optimise we need tools to diagnose time spent, memory allocations and possibly how machine code is being generated.
 
-## Hardware
+- For quick-and-dirty diagnostics (time and memory tracking) we can use the `@time` macro behind function calls
+- For an accurate measure of the latter preferer `using BenchmarkTools` and the `@btime` macro (this will give you the lower bound of `@benchmark`, which is what you want to measure!)
+- For more serious profiling tools, consider reading the [manual section](https://docs.julialang.org/en/v1/manual/profile/)
 
-## Threading
+
+The code can be inspected at several stages with the macros
+- The AST after parsing: `@macroexpand`
+- The AST after type inference and some optimizations: `@code_typed` (prefer `@code_warntype`)
+- The LLVM and assembly: `@code_llvm`, `@code_native`
+
+Read more on [introspection](https://docs.julialang.org/en/v1/devdocs/reflection/)
 """
+
+# ╔═╡ 8d9f2162-8f07-11eb-1c1d-b994b88811e1
+md"""
+#### Exercise: Not all "created" equal
+Benchmark the different ways of mapping a function to a container and realise that computationally not all operations are equivalent
+- `map`
+- `broadcast`
+- list comprehension
+- explicit `for`-loop
+"""
+
+# ╔═╡ bff46124-8f08-11eb-1140-d78145e2fe05
+#= md"""
+
+```julia
+using BenchmarkTools
+
+fmap(x) = map(x -> 2x, x)
+
+fdot(x) = 2 .* x
+
+fcomprehension(x) = [2x for x in x]
+
+function floop(x)
+    y = similar(x) # prefer similar to zero as it only has to allocate (and not zero)
+    for i in eachindex(x)
+        y[i] = 2*x[i]
+    end
+    return y
+end
+
+x = rand(10_000)
+
+# The $ interpolates values into the expression avoiding the global-variable problem
+
+@btime fmap($x);
+# > 7.977 μs (2 allocations: 78.20 KiB)
+@btime fcomprehension($x);
+# > 7.890 μs (2 allocations: 78.20 KiB)
+@btime fdot($x);
+# > 8.238 μs (2 allocations: 78.20 KiB)
+@btime floop($x);
+# > 9.495 μs (2 allocations: 78.20 KiB)
+```
+""" =#
+
+# ╔═╡ fdfddce2-919d-11eb-1b48-5d31c8d4b250
+md"""
+### Global (`isa Any`) variables: Electric Boogaloo
+_It's not over yet_
+
+[1st performance tip](https://docs.julialang.org/en/v1/manual/performance-tips/#Avoid-global-variables) on the Julia's official documentation: **Avoid global variables**
+
+A global variable might have its value, and therefore its type, change at any point. This makes it difficult for the compiler to optimize code using global variables.
+- Variables should be local
+- Or passed as arguments to functions (this way the code will be specialized for the input types)
+
+```julia
+x = rand(100_000);
+
+function sum_global()
+	s = 0.0
+	for i in x
+	   s += i
+	end
+	return s
+end
+
+function sum_arg(x)
+	s = 0.0
+	for i in x
+	   s += i
+	end
+	return s
+end
+
+@time sum_global()
+# 0.016230 seconds (399.49 k allocations: 7.622 MiB)
+
+@time sum_arg(x)
+# 0.000123 seconds (1 allocation: 16 bytes)
+```
+
+This unfortunate dichotomy between the functions is due to one thing: Julia can't **specialize** the function `sum_global` since it cannot guarantee the type of `x`.
+While for `sum_arg`, it will specialize it for the type of `x` that is encountered (a complex `x` would trigger compilation).
+
+**Type inference did not require the type to be annotated!**
+
+`@code_warntype` can detect these `isa Any` variables or the also related type instabilities!
+"""
+
+# ╔═╡ 8a97bcb8-91a3-11eb-37b4-4f9004e01e0b
+md"""
+#### Exercise: Purging type instabilities / "untyped" containers
+- Remember that an array with abstract type (e.g. `Any` or `Real`) will end up being an array of pointers and can't be operated on efficiently. `abstract` types can also prevent Julia from triggering the appropriate function specialization. Compare the `@code_native` outputs from a simple function operating on the fields of
+```julia
+mutable struct MyAmbiguousType
+   a::AbstractFloat # less ambiguous than `Any` but still ambiguous
+end
+
+mutable struct MyType{T<:AbstractFloat}
+   a::T
+end
+```
+
+- Can you spot the type instability? Fix it and consequently `@btime` and `@code_native` the new function vs the old one.
+```julia
+function f()
+	x = 1
+	for i = 1:10
+		x = x/2
+	end
+	return x
+end
+```
+"""
+
+# ╔═╡ 0ae35bf0-91a6-11eb-1a75-235aaf78d346
+#= md"""
+##### Solution:
+
+```julia
+add1(m::MyType) = m.a + 1
+
+@code_native add1(MyType{Float64}(0.3))
+@code_native add1(MyType{AbstractFloat}(0.3))
+```
+""" =#
+
+# ╔═╡ 700b1240-9197-11eb-0cfd-1bb3d7393084
+md"""
+## Understanding timecales
+There's a rather famous table comparing computer with human timecales
+
+| Action (3GHz) | Average latency | Human time |
+|:---------- | ---------- |:------------:|
+| 1 clock-cyle   | 0.3 ns | 1 s |
+| L1 cache    | 0.9 ns  | 3 s |
+| L2 cache    | 2.8 ns  | 9 s |
+| L3 cache    | 12.9 ns  | 43 s |
+| RAM    | 70-100 ns  | 3.5 to 5.5 min |
+| SSD/IO | 7-150 μs | 2h to 2 days |
+| Reboot | 30-60s | 1000-2000 years |
+
+In a single cycle a photon can only travel <10 cms to the RAM better not be too far away (imagine an electron).
+
+The slowness of RAM can be mitigated by transfering data into the caches. **BUT** when the CPU requests data from the RAM, it is checked if it's in the cache. If not, there will be a _cache miss_ and the program will stall until the data is fetched from the RAM.
+
+Naturally, to reduce these cache misses, consider
+- _Temporal locality_: If you need to access a piece of memory multiple times, do it close in time
+- _Spatial locality_: Access memory which is close to each other (since the CPU fetches chunks of data at a time)
+
+As a corollary
+- Use little memory
+- Access data sequentially (since the CPU can prefetch data that you may need)
+
+It doesn't end here: read more on [alignment issues](https://biojulia.net/post/hardware/#alignment) [(show-in-class)](https://juliasimd.github.io/LoopVectorization.jl/stable/examples/matrix_multiplication/)
+
+### Allocations
+Memory allocation can be a significant bottleneck in critical operations.
+Dynamic languages such as Julia usually employ a _garbage collector_ to allocate and deallocate objects in the RAM for us
+```julia
+a = [1,2,3] # allocation
+a = nothing # the previous value of `a` is now garbage (since in this case no other variables are pointing at it) and shall be collected automatically
+```
+- Allocation and deallocation create _overhead_ which can be very costly
+- More allocations results in more memory usage which results in more cache misses
+
+The 3 most encountered problems where this can be fixed are
+
+- When updating some value _inplace_
+```julia
+N = 1000
+a = rand(10,10);
+
+function f1(a, N)
+	x = zero(a)
+	for i in 1:N
+		x += i * a # remember that updating operators such as `+=` reassign `x`
+	end
+	x
+end
+
+@btime f1($a, $N)
+# 436.185 μs (2001 allocations: 1.71 MiB)
+```
+
+In this case use the **inplace (broadcasted) assignment**
+```julia
+function f2(a, N)
+	x = zero(a)
+	for i in 1:N
+		x .+= i * a # "add element-wise to `x`
+	end
+	x
+end
+
+@btime f2($a, $N)
+# 354.372 μs (1001 allocations: 875.88 KiB)
+```
+
+- When running a compution whose output memory can be recycled (see the exercise!)
+
+- When taking slices (see the exercise!)
+
+
+#### Single instruction, multiple data: `@simd`
+CPUs operate on data present in registers inside the CPU, which are meant to hold small fixed size slots, like floats (see the `r`s in `@code_native`).
+Since this is a major bottleneck, modern CPUs have bigger registries (instead of 64-bit, 256+), which allow a **S**ingle **I**nstruction operate on **M**ultiple **D**ata.
+
+Show the difference of
+```julia
+using StaticArrays
+a = @SVector Int32[1,2,3,4,5,6,7,8]
+code_native(+, (typeof(a), typeof(a)), debuginfo=:none)
+
+a = @SVector Int64[1,2,3,4,5,6,7,8]
+code_native(+, (typeof(a), typeof(a)), debuginfo=:none)
+
+a = @SVector Int64[1,2,3,4]
+code_native(+, (typeof(a), typeof(a)), debuginfo=:none)
+```
+
+- SIMD needs uninterrupted iteration of fixed length
+- Bound-checking causes branching so deactivate it with `@inbounds for i in ...` (This is also may be desirable for critical non-`@simd` loops)
+  - Avoid branching at all costs. Even with _branch prediction_, a misprediction (common for random braches) will cost several CPU cycles.
+- SIMD needs associative operations (since the loop will be reordered)
+Since float addition is **not** associative, automatic `@simd` is not "automatically" on for, e.g., float addition
+```julia
+@show 0.1 + (0.2 + 0.3)
+@show (0.1 + 0.2) + 0.3
+```
+
+Actually, IEEE 754 float arithmetic is tricky! Consider a number that is undefined or unrepresentable, a `NaN`
+```julia
+@show NaN == NaN # not even reflexive!
+```
+
+[Reference](https://biojulia.net/post/hardware/#simd)
+"""
+
+# ╔═╡ a3346d6a-919a-11eb-13e9-59293be49654
+md"""
+#### Exercise: The 3 ecology Rs: RECYCLE, REUSE and REDUCE
+
+- Avoid extra allocations by _recycling_
+  - Rewrite `loopinc` using an in-place version of `xinc` –> `xinc!`
+  - Compare the performance of the new `loop` function
+  - Note: The point is not to optimise away the `ret[2]` part so keep it!
+```julia
+xinc(x) = [x, x+1, x+2]
+function loop()
+	y = 0
+	for i = 1:10^7
+		ret = xinc(i)
+		y += ret[2]
+	end
+	return y
+end
+```
+
+
+- Avoid extra allocations by _reusing_
+  - Create a `(50, 100_000)` `rand`om matrix `A` and a vector `x` with size `(100_000,)`
+  - Compare the performance of ``\sum_i \sum^{80000}_{j=1}A_{ij}x_j`` using `slice`s and `@view`s
+  - Note that performance from `@view` is just a [rule of thumb](https://docs.julialang.org/en/v1/manual/performance-tips/#Copying-data-is-not-always-bad).
+
+
+- Optimise away by _reducing_ (and everything else)
+```julia
+function work()
+	A = zeros(N,N)
+	for i in 1:N
+        for j in 1:N
+            val = mod(v[i],256);
+            A[i,j] = B[i,j]*(sin(val)*sin(val)-cos(val)*cos(val))
+        end
+	end
+	return A
+end
+```
+
+given the parameters
+```julia
+N = 4_000
+B = [float(i-j) for i in 1:N, j in 1:N]
+v = [i for i in 1:N]
+```
+
+Pro-tip: Compare different implementations of `work!` using the `≈` (`\approx`) operator, since the `==` may be too strict given the shenanigans we encountered with float arithmetics.
+"""
+
+# ╔═╡ fd81c0c0-91fd-11eb-1ddb-1546f52626af
+#= md"""
+##### Solution
+This excellent exercise was adapted from [here](https://github.com/crstnbr/JuliaCologne21/blob/master/Day2/exercise_solutions/solution_optimization2.ipynb)
+
+```julia
+using Test
+using BenchmarkTools
+
+# Parameters
+N = 1_000
+B = [float(i-j) for i in 1:N, j in 1:N]
+v = [i for i in 1:N]
+
+# Base
+function work()
+	A = zeros(N,N)
+	for i in 1:N
+        for j in 1:N
+            val = mod(v[i],256);
+            A[i,j] = B[i,j]*(sin(val)*sin(val)-cos(val)*cos(val))
+        end
+	end
+	return A
+end
+
+@btime work()
+# 670.186 ms (11469981 allocations: 197.94 MiB)
+```
+
+- Purge globals!
+```julia
+@code_warntype work()
+
+function work1(B, v, N)
+	A = zeros(N,N)
+	for i in 1:N
+        for j in 1:N
+            val = mod(v[i],256);
+            A[i,j] = B[i,j]*(sin(val)*sin(val)-cos(val)*cos(val))
+        end
+	end
+	return A
+end
+
+@code_warntype work(B, v, N)
+
+@test work() ≈ work1(B, v, N)
+@btime work1($B, $v, $N)
+# 88.320 ms (2 allocations: 7.63 MiB)
+```
+
+- Analytic optimisations (these are the best)
+```julia
+@testset "My trig identities" begin
+	x = rand()
+	@test 1-2*cos(x)*cos(x) ≈ sin(x)*sin(x)-cos(x)*cos(x)
+	@test -cos(2*x) ≈ sin(x)*sin(x)-cos(x)*cos(x)
+end
+
+function work2(B, v, N)
+    A = zeros(N,N)
+    for i in 1:N
+        for j in 1:N
+            val = mod(v[i],256);
+            A[i,j] = B[i,j]*(-cos(2*val));
+        end
+    end
+	return A
+end
+
+@test work() ≈ work2(B, v, N)
+@btime work2($B, $v, $N)
+# 37.520 ms (2 allocations: 7.63 MiB)
+```
+
+- Pull-out `val` computation
+```julia
+function work3(B, v, N)
+    A = zeros(N,N)
+    for i in 1:N
+		val = -cos(2*mod(v[i],256))
+        for j in 1:N
+            A[i,j] = B[i,j]*val;
+        end
+    end
+	return A
+end
+
+function work4(B, v, N)
+	val = [-cos(2*mod(x,256)) for x in v]
+
+    A = zeros(N,N)
+    for i in 1:N
+        for j in 1:N
+            A[i,j] = B[i,j]*val[i];
+        end
+    end
+	return A
+end
+
+@test work() ≈ work3(B, v, N)
+@test work() ≈ work4(B, v, N)
+
+@btime work3($B, $v, $N)
+# 20.755 ms (2 allocations: 7.63 MiB)
+
+@btime work4($B, $v, $N)
+# 20.262 ms (3 allocations: 7.64 MiB)
+```
+
+- Switch order of the loops: favour data locality!
+```julia
+function work5(B, v, N)
+	val = [-cos(2*mod(x,256)) for x in v]
+
+    A = zeros(N,N)
+    for j in 1:N
+        for i in 1:N
+            A[i,j] = B[i,j]*val[i];
+        end
+    end
+	return A
+end
+
+@test work() ≈ work5(B, v, N)
+
+@btime work5($B, $v, $N)
+# 4.947 ms (3 allocations: 7.64 MiB)
+```
+
+- `@inbounds` and `@simd`
+```julia
+function work6(B, v, N)
+	val = [-cos(2*mod(x,256)) for x in v]
+
+    A = zeros(N,N)
+    for j in 1:N
+        for i in 1:N
+            @inbounds A[i,j] = B[i,j] * val[i];
+        end
+    end
+	return A
+end
+
+@test work() ≈ work6(B, v, N)
+
+@btime work6($B, $v, $N)
+# 3.298 ms (3 allocations: 7.64 MiB)
+```
+
+- Broadcast it for beauty points
+```julia
+work7(B, v) = return B .* [-cos(2*mod(x,256)) for x in v]
+
+@test work() ≈ work7(B, v)
+
+@btime work7($B, $v, $N)
+# 2.019 ms (3 allocations: 7.64 MiB)
+```
+""" =#
 
 # ╔═╡ 4eb2573e-8998-11eb-2274-379a03bed49c
 md"""
@@ -715,6 +1189,7 @@ logistic_map(r) = approx_stop_fixed_point(x -> r * x * (1-x))
 """ =#
 
 # ╔═╡ Cell order:
+# ╟─59afc220-9195-11eb-2384-29ae6f4aa263
 # ╟─e5c840d8-8978-11eb-37fa-77fb05a3d821
 # ╟─8636e926-8b38-11eb-3f98-f58135f3d02e
 # ╟─540516aa-8b38-11eb-26f8-d31b72022689
@@ -734,5 +1209,13 @@ logistic_map(r) = approx_stop_fixed_point(x -> r * x * (1-x))
 # ╟─4bee5324-8eeb-11eb-326b-efba53215f34
 # ╟─28f63950-8eef-11eb-0481-55fad44619d5
 # ╟─8ac22e72-8978-11eb-1674-e1b95403e215
+# ╟─8d9f2162-8f07-11eb-1c1d-b994b88811e1
+# ╟─bff46124-8f08-11eb-1140-d78145e2fe05
+# ╟─fdfddce2-919d-11eb-1b48-5d31c8d4b250
+# ╟─8a97bcb8-91a3-11eb-37b4-4f9004e01e0b
+# ╟─0ae35bf0-91a6-11eb-1a75-235aaf78d346
+# ╟─700b1240-9197-11eb-0cfd-1bb3d7393084
+# ╟─a3346d6a-919a-11eb-13e9-59293be49654
+# ╟─fd81c0c0-91fd-11eb-1ddb-1546f52626af
 # ╟─4eb2573e-8998-11eb-2274-379a03bed49c
 # ╟─b58a861c-7b50-11eb-286d-c5a5dd03429f
