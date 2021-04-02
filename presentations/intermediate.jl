@@ -135,7 +135,7 @@ md"""
 """
 
 # ╔═╡ 53f03512-8b38-11eb-031b-55d81ef5aeac
-md"""
+#= md"""
 ##### Solution:
 
 ```julia
@@ -158,7 +158,7 @@ end
 @time f(a);
 @time g(a);
 ```
-"""
+""" =#
 
 # ╔═╡ 533f5a58-8b38-11eb-1c75-61000cf8394f
 md"""
@@ -308,14 +308,14 @@ Note: infix operators such as `∘` need to be wrapped around `()` in method def
 """
 
 # ╔═╡ 44b9eb9c-8980-11eb-17b8-1937532d3a28
-md"""
+#= md"""
 ##### Solution:
 ```julia
 (∘)(f::Function, g::Function) = (x...) -> f(g(x...))
 
 (<|)(f::Function, args...) = f(args...)
 ```
-"""
+""" =#
 
 # ╔═╡ af38a46c-8981-11eb-26de-35f9e487423c
 md"""
@@ -415,14 +415,14 @@ md"""
 """
 
 # ╔═╡ bded83c2-8ee2-11eb-3b00-a7681ba476dc
-md"""
+#= md"""
 ##### Solution:
 
 ```julia
 my_min(x,y) = x < y ? x : y
 min_fold(c) = foldl(my_min, c)
 ```
-"""
+""" =#
 
 # ╔═╡ 0d6a34a4-8ee3-11eb-08ae-2763ca230fd5
 md"""
@@ -617,7 +617,7 @@ In order to know where and what to optimise we need tools to diagnose time spent
 
 The code can be inspected at several stages with the macros
 - The AST after parsing: `@macroexpand`
-- The AST after type inference and some optimizations: `@code_typed` (prefer `@code_warntype`)
+- The AST after type inference and some optimizations: `@code_warntype` and `@code_typed`
 - The LLVM and assembly: `@code_llvm`, `@code_native`
 
 Read more on [introspection](https://docs.julialang.org/en/v1/devdocs/reflection/)
@@ -914,6 +914,43 @@ v = [i for i in 1:N]
 Pro-tip: Compare different implementations of `work!` using the `≈` (`\approx`) operator, since the `==` may be too strict given the shenanigans we encountered with float arithmetics.
 """
 
+# ╔═╡ ebf2fe2e-92ea-11eb-285d-0f6a5e77d2a8
+#= md"""
+#### Solution:
+```julia
+function xinc!(ret, x)
+  ret[1] = x
+  ret[2] = x + 1
+  ret[3] = x + 2
+  nothing
+end
+
+function loop2()
+  ret = zeros(Int, 3)
+
+  y = 0
+    
+  for i = 1:10^7
+    xinc!(ret, i)
+    y += ret[2]
+  end
+  return y
+end
+```
+""" =#
+
+# ╔═╡ 1c0414cc-92eb-11eb-0110-eff5259ec446
+#= md"""
+```julia
+A = rand(50, 100_000);
+x = rand(100_000);
+
+@btime sum(A[i,1:80_000] .* x[1:80_000] for i in 1:50)
+
+@btime sum(@views A[i,1:80_000] .* x[1:80_000] for i in 1:50)
+```
+""" =#
+
 # ╔═╡ fd81c0c0-91fd-11eb-1ddb-1546f52626af
 #= md"""
 ##### Solution
@@ -1052,7 +1089,7 @@ function work6(B, v, N)
 
     A = zeros(N,N)
     for j in 1:N
-        for i in 1:N
+        @simd for i in 1:N
             @inbounds A[i,j] = B[i,j] * val[i];
         end
     end
@@ -1065,13 +1102,28 @@ end
 # 3.298 ms (3 allocations: 7.64 MiB)
 ```
 
-- Broadcast it for beauty points
+- It's unnecessary to zero the allocated vector
+```julia
+function work7(B, v, N)
+	val = [-cos(2*mod(x,256)) for x in v]
+
+    A = similar(B) # zeros have to zero the data, let's just allocate it
+    for j in 1:N
+        @simd for i in 1:N
+            @inbounds A[i,j] = B[i,j] * val[i];
+        end
+    end
+	return A
+end
+```
+
+- Broadcast it for beauty points (same performance as the `@simd` loop)
 ```julia
 work7(B, v) = return B .* [-cos(2*mod(x,256)) for x in v]
 
 @test work() ≈ work7(B, v)
 
-@btime work7($B, $v, $N)
+@btime work7($B, $v)
 # 2.019 ms (3 allocations: 7.64 MiB)
 ```
 """ =#
@@ -1216,6 +1268,8 @@ logistic_map(r) = approx_stop_fixed_point(x -> r * x * (1-x))
 # ╟─0ae35bf0-91a6-11eb-1a75-235aaf78d346
 # ╟─700b1240-9197-11eb-0cfd-1bb3d7393084
 # ╟─a3346d6a-919a-11eb-13e9-59293be49654
+# ╟─ebf2fe2e-92ea-11eb-285d-0f6a5e77d2a8
+# ╟─1c0414cc-92eb-11eb-0110-eff5259ec446
 # ╟─fd81c0c0-91fd-11eb-1ddb-1546f52626af
 # ╟─4eb2573e-8998-11eb-2274-379a03bed49c
 # ╟─b58a861c-7b50-11eb-286d-c5a5dd03429f
